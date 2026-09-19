@@ -38,15 +38,15 @@ const OrganizationCard = ({ org, index = 0 }) => {
         <div className="mt-5 flex gap-3">
           <a
             href={org.fb_page_link}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:text-sm"
           >
-            <FacebookIcon className="h-4 w-4 text-[#1877F2]" /> Facebook Link
+            <FacebookIcon className="h-4 w-4 shrink-0 text-[#1877F2]" /> Facebook Page
           </a>
           <a
             href={org.join_form_link}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-900"
+            className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-emerald-800 px-4 py-2 text-xs font-medium text-white transition hover:bg-emerald-900 sm:text-sm"
           >
-            <Globe className="h-4 w-4" /> Website
+            <Globe className="h-4 w-4 shrink-0" /> Website
           </a>
         </div>
       </div>

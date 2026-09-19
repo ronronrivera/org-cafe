@@ -44,7 +44,7 @@ const Login = ({ onSuccess = () => {} }) => {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-white px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-[0_0_60px_rgba(0,0,0,0.28)]">
+      <div className="w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-[0_0_60px_rgba(0,0,0,0.28)]">
         {/* Card header */}
         <div className="flex flex-col items-center text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
