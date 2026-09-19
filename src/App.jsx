@@ -24,14 +24,23 @@ const App = () => {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // Resolve the role (admin / org_rep) whenever the session changes.
+  // Resolve the role only when the actual user changes — NOT on every session
+  // object (token refreshes hand back a new object with the same user, and
+  // reacting to those would create an auth refresh loop).
+  const userId = session?.user?.id ?? null
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       setRole(null)
       return
     }
-    getCurrentRole().then(setRole)
-  }, [session])
+    let active = true
+    getCurrentRole().then((r) => {
+      if (active) setRole(r)
+    })
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   const handleLogout = async () => {
     await signOut()

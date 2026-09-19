@@ -93,11 +93,13 @@ export async function updatePassword(currentPassword, newPassword) {
 /**
  * Resolve the current session's role without exposing the hidden mapping tables.
  * Returns 'admin', 'org_rep', or null (not signed in / no role).
+ *
+ * Note: this does NOT call supabase.auth.getSession() — doing so can trigger a
+ * token refresh, and if called reactively on every auth event it creates a
+ * refresh loop. The RPCs run against the current session automatically (or as
+ * anon, in which case they return false/null). Call this only when signed in.
  */
 export async function getCurrentRole() {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
-
   const { data: isAdmin } = await supabase.rpc('is_admin')
   if (isAdmin) return 'admin'
 
