@@ -52,19 +52,19 @@ const Navbar = ({
     'flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium transition hover:bg-white/10'
 
   const navLink = (item, extra = '') =>
-    'whitespace-nowrap rounded-md px-4 py-2.5 text-base font-medium transition ' +
+    'whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ' +
     (item === active ? 'bg-white text-emerald-900' : 'text-emerald-50 hover:bg-white/10') +
     (extra ? ' ' + extra : '')
 
   return (
     <header className="bg-emerald-900 text-white shadow-md">
       {/* Top bar: title + centered nav (desktop) / hamburger (mobile) */}
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-6">
-        <a href="#" onClick={goHome} className="flex min-w-0 items-center gap-3 md:justify-self-start">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/15">
-            <Landmark className="h-6 w-6" />
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-6">
+        <a href="#" onClick={goHome} className="flex min-w-0 items-center gap-2.5 md:justify-self-start">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15">
+            <Landmark className="h-5 w-5" />
           </span>
-          <span className="truncate text-lg font-semibold sm:text-xl">
+          <span className="truncate text-base font-semibold sm:text-lg">
             LCO &amp; Organization Website
           </span>
         </a>
@@ -127,9 +127,9 @@ const Navbar = ({
           <a
             href="#"
             onClick={goLogin}
-            className="hidden items-center gap-2 rounded-md border border-white/30 px-4 py-2.5 text-base font-medium text-white transition hover:bg-white/10 md:flex md:justify-self-end"
+            className={rightBtn + ' hidden md:flex md:justify-self-end'}
           >
-            <User className="h-5 w-5" /> Login
+            <User className="h-4 w-4" /> Login
           </a>
         )}
 
