@@ -9,7 +9,7 @@ const ROLES = [
   { id: 'admin', label: 'Administrator' },
 ]
 
-const Login = () => {
+const Login = ({ onSuccess = () => {} }) => {
   const [role, setRole] = useState('org_rep')
   const [showPassword, setShowPassword] = useState(false)
   const [identifier, setIdentifier] = useState('')
@@ -39,7 +39,7 @@ const Login = () => {
       setError(authError)
       return
     }
-    // TODO: route to the admin control hub once it exists.
+    onSuccess()
   }
 
   return (
