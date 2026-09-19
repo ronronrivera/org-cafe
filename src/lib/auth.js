@@ -41,10 +41,48 @@ export async function signInAsAdmin(email, password) {
 }
 
 /**
+ * Sign in an organization representative.
+ *
+ * Same email/password flow as admins, but verified via get_user_org_id() — a
+ * non-null org id means the user is a mapped org_rep. If not, the session is
+ * revoked so only real org_reps get an org_rep session.
+ *
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<{ user: import('@supabase/supabase-js').User | null, orgId: number | null, error: string | null }>}
+ */
+export async function signInAsOrgRep(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
+  })
+  if (error) return { user: null, orgId: null, error: error.message }
+
+  const { data: orgId, error: rpcError } = await supabase.rpc('get_user_org_id')
+  if (rpcError) {
+    await supabase.auth.signOut()
+    return { user: null, orgId: null, error: 'Could not verify organization access. Please try again.' }
+  }
+  if (!orgId) {
+    await supabase.auth.signOut()
+    return { user: null, orgId: null, error: 'This account is not linked to an organization.' }
+  }
+  return { user: data.user, orgId, error: null }
+}
+
+/**
  * Sign the current user out.
  */
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
+  return { error: error?.message ?? null }
+}
+
+/**
+ * Update the signed-in user's display name (stored in user_metadata).
+ */
+export async function updateName(fullName) {
+  const { error } = await supabase.auth.updateUser({ data: { full_name: fullName.trim() } })
   return { error: error?.message ?? null }
 }
 

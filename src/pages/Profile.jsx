@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { Mail, KeyRound } from 'lucide-react'
-import { updateEmail as apiUpdateEmail, updatePassword as apiUpdatePassword } from '../lib/auth'
+import { Mail, KeyRound, UserRound } from 'lucide-react'
+import {
+  updateEmail as apiUpdateEmail,
+  updatePassword as apiUpdatePassword,
+  updateName as apiUpdateName,
+} from '../lib/auth'
 
-// Account settings — email and password changes go through Supabase Auth.
-const Profile = ({ email }) => {
+// Account settings — name, email and password changes go through Supabase Auth.
+const Profile = ({ email, name }) => {
+  const [fullName, setFullName] = useState(name ?? '')
   const [newEmail, setNewEmail] = useState(email ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
@@ -13,6 +18,15 @@ const Profile = ({ email }) => {
 
   const field =
     'w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+
+  const updateFullName = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setMsg(null)
+    const { error } = await apiUpdateName(fullName)
+    setLoading(false)
+    setMsg(error ? { type: 'error', text: error } : { type: 'success', text: 'Name updated.' })
+  }
 
   const updateEmail = async (e) => {
     e.preventDefault()
@@ -68,6 +82,31 @@ const Profile = ({ email }) => {
           {msg.text}
         </p>
       )}
+
+      {/* Change name */}
+      <section className="mt-6 animate-fade-in-up rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+          <UserRound className="h-5 w-5 text-emerald-700" /> Personal Details
+        </h2>
+        <form onSubmit={updateFullName} className="mt-4 space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700">Full name</span>
+            <input
+              className={field + ' mt-1'}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your name"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
+          >
+            Update Name
+          </button>
+        </form>
+      </section>
 
       {/* Change email */}
       <section className="mt-6 animate-fade-in-up rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

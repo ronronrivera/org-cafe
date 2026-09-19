@@ -1,32 +1,65 @@
-import { useState } from 'react'
-import { Building2, ReceiptText, Plus, Trash2 } from 'lucide-react'
-import { organizations as seedOrgs } from '../data/sampleOrganizations'
+import { useEffect, useState } from 'react'
+import { Building2, ReceiptText, Plus, Trash2, Loader2 } from 'lucide-react'
 import { students as seedStudents } from '../data/sampleStudents'
+import { listOrganizations, listCategories, deleteOrganization } from '../lib/organizations'
+import AddOrgModal from '../components/AddOrgModal'
+import ConfirmModal from '../components/ConfirmModal'
 
-// Hardcoded for now (SRS §3.4 / §3.5). Wire to Supabase later.
-const CATEGORIES = ['Academic', 'Cultural', 'Recreation', 'Environmental', 'Technical', 'Religious']
 const TABS = [
   { id: 'orgs', label: 'Organizations', icon: Building2 },
   { id: 'payments', label: 'Student Payments', icon: ReceiptText },
 ]
-const EMPTY_FORM = { org_name: '', abbreviation: '', category_name: 'Academic', description: '' }
-
 const Admin = ({ email }) => {
   const [tab, setTab] = useState('orgs')
 
-  // Organizations
-  const [orgs, setOrgs] = useState(seedOrgs)
-  const [form, setForm] = useState(EMPTY_FORM)
+  // Organizations (live from Supabase)
+  const [orgs, setOrgs] = useState([])
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
-  const addOrg = (e) => {
-    e.preventDefault()
-    if (!form.org_name.trim()) return
-    setOrgs((prev) => [{ org_id: Date.now(), ...form }, ...prev])
-    setForm(EMPTY_FORM)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [notice, setNotice] = useState(null) // { type, text }
+  const [deleteTarget, setDeleteTarget] = useState(null) // org pending deletion
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      setLoading(true)
+      const [orgRes, catRes] = await Promise.all([listOrganizations(), listCategories()])
+      if (!active) return
+      setOrgs(orgRes.data)
+      setCategories(catRes.data)
+      setLoadError(orgRes.error || catRes.error)
+      setLoading(false)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleCreated = (org, warning) => {
+    setOrgs((prev) => [org, ...prev])
+    setModalOpen(false)
+    setNotice({ type: warning ? 'error' : 'success', text: warning || `“${org.org_name}” added.` })
   }
-  const deleteOrg = (id) => setOrgs((prev) => prev.filter((o) => o.org_id !== id))
 
-  // Students / payments
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const { error } = await deleteOrganization(deleteTarget.org_id)
+    setDeleting(false)
+    if (error) {
+      setNotice({ type: 'error', text: `Delete failed: ${error}` })
+    } else {
+      setOrgs((o) => o.filter((x) => x.org_id !== deleteTarget.org_id))
+      setNotice({ type: 'success', text: `“${deleteTarget.org_name}” deleted.` })
+    }
+    setDeleteTarget(null)
+  }
+
+  // Students / payments (still hardcoded)
   const [students, setStudents] = useState(seedStudents)
   const [filter, setFilter] = useState('all')
   const toggleStatus = (id) =>
@@ -38,9 +71,6 @@ const Admin = ({ email }) => {
   const visibleStudents = students.filter((s) => filter === 'all' || s.status === filter)
   const paidCount = students.filter((s) => s.status === 'Paid').length
   const notPaidCount = students.length - paidCount
-
-  const field =
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-10">
@@ -68,93 +98,89 @@ const Admin = ({ email }) => {
       {/* Organizations tab */}
       {tab === 'orgs' && (
         <div key="orgs" className="mt-6 animate-fade-in-up space-y-6">
-          {/* Add org form */}
-          <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-semibold text-slate-800">Add a new organization</h2>
-            <form onSubmit={addOrg} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <input
-                className={field}
-                placeholder="Organization name"
-                value={form.org_name}
-                onChange={(e) => setForm({ ...form, org_name: e.target.value })}
-              />
-              <input
-                className={field}
-                placeholder="Abbreviation (e.g. BSIT)"
-                value={form.abbreviation}
-                onChange={(e) => setForm({ ...form, abbreviation: e.target.value })}
-              />
-              <select
-                className={field}
-                value={form.category_name}
-                onChange={(e) => setForm({ ...form, category_name: e.target.value })}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-              <input
-                className={field}
-                placeholder="Short description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-              <div className="sm:col-span-2">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 rounded-lg bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900"
-                >
-                  <Plus className="h-4 w-4" /> Add Organization
-                </button>
-              </div>
-            </form>
-          </section>
+          {notice && (
+            <p
+              className={
+                'rounded-lg px-3 py-2 text-sm ' +
+                (notice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600')
+              }
+            >
+              {notice.text}
+            </p>
+          )}
 
           {/* Org list */}
           <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-800">Organizations</h2>
-              <span className="text-sm text-slate-400">{orgs.length} total</span>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-800">Organizations</h2>
+                <span className="text-sm text-slate-400">{orgs.length} total</span>
+              </div>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="flex items-center gap-2 rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-900"
+              >
+                <Plus className="h-4 w-4" /> Add Organization
+              </button>
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Abbr.</th>
-                  <th className="px-6 py-3">Category</th>
-                  <th className="px-6 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {orgs.map((o) => (
-                  <tr key={o.org_id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 font-medium text-slate-800">{o.org_name}</td>
-                    <td className="px-6 py-3 text-slate-500">{o.abbreviation}</td>
-                    <td className="px-6 py-3 text-slate-500">{o.category_name}</td>
-                    <td className="px-6 py-3 text-right">
-                      <button
-                        onClick={() => deleteOrg(o.org_id)}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {orgs.length === 0 && (
+
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 px-6 py-12 text-slate-400">
+                <Loader2 className="h-5 w-5 animate-spin" /> Loading…
+              </div>
+            ) : loadError ? (
+              <div className="px-6 py-8 text-center text-red-600">{loadError}</div>
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
-                      No organizations yet.
-                    </td>
+                    <th className="px-6 py-3">Logo</th>
+                    <th className="px-6 py-3">Name</th>
+                    <th className="px-6 py-3">Category</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3 text-right">Action</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {orgs.map((o) => (
+                    <tr key={o.org_id} className="hover:bg-slate-50">
+                      <td className="px-6 py-3">
+                        {o.logo ? (
+                          <img src={o.logo} alt="" className="h-9 w-9 rounded-md object-cover" />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-xs text-slate-400">
+                            —
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 font-medium text-slate-800">{o.org_name}</td>
+                      <td className="px-6 py-3 text-slate-500">{o.org_categories?.category_name ?? '—'}</td>
+                      <td className="px-6 py-3 text-slate-500">{o.status}</td>
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => setDeleteTarget(o)}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {orgs.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                        No organizations yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </section>
         </div>
       )}
 
-      {/* Payments tab */}
+      {/* Payments tab (hardcoded for now) */}
       {tab === 'payments' && (
         <div key="payments" className="mt-6 animate-fade-in-up">
           <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -203,9 +229,7 @@ const Admin = ({ email }) => {
                       <span
                         className={
                           'rounded-full px-2.5 py-1 text-xs font-semibold ' +
-                          (s.status === 'Paid'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-red-100 text-red-700')
+                          (s.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700')
                         }
                       >
                         {s.status}
@@ -232,6 +256,25 @@ const Admin = ({ email }) => {
             </table>
           </section>
         </div>
+      )}
+
+      {modalOpen && (
+        <AddOrgModal
+          categories={categories}
+          onClose={() => setModalOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete organization?"
+          message={`This will permanently delete “${deleteTarget.org_name}” and all its posts, media, and announcements. This cannot be undone.`}
+          confirmLabel="Delete"
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onClose={() => !deleting && setDeleteTarget(null)}
+        />
       )}
     </main>
   )

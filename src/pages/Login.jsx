@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Landmark, User, Eye, EyeOff } from 'lucide-react'
-import { signInAsAdmin } from '../lib/auth'
+import { signInAsAdmin, signInAsOrgRep } from '../lib/auth'
 
 // Both roles authenticate through Supabase Auth (SRS §3.3, §3.4). This is the
 // design shell; the submit handler is wired to real auth in a later step.
@@ -9,7 +10,8 @@ const ROLES = [
   { id: 'admin', label: 'Administrator' },
 ]
 
-const Login = ({ onSuccess = () => {} }) => {
+const Login = () => {
+  const navigate = useNavigate()
   const [role, setRole] = useState('org_rep')
   const [showPassword, setShowPassword] = useState(false)
   const [identifier, setIdentifier] = useState('')
@@ -24,22 +26,18 @@ const Login = ({ onSuccess = () => {} }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    if (isOrgRep) {
-      // org_rep auth is wired in a later step.
-      setError('Organization representative login is not available yet.')
-      return
-    }
-
     setLoading(true)
-    const { error: authError } = await signInAsAdmin(identifier, password)
-    setLoading(false)
 
+    const { error: authError } = isOrgRep
+      ? await signInAsOrgRep(identifier, password)
+      : await signInAsAdmin(identifier, password)
+
+    setLoading(false)
     if (authError) {
       setError(authError)
       return
     }
-    onSuccess()
+    navigate(isOrgRep ? '/dashboard' : '/admin')
   }
 
   return (

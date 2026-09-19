@@ -1,97 +1,83 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Landmark, User, UserCog, LogOut, Settings, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react'
 
-// "Settings" here is the account menu, not a page. Base nav for everyone:
-const NAV_ITEMS = ['Home', 'Payment Status', 'Organizations List']
+// Payment Status has no page yet (path: null).
+const NAV_ITEMS = [
+  { label: 'Home', path: '/' },
+  { label: 'Payment Status', path: null },
+  { label: 'Organizations List', path: '/organizations' },
+]
 
-const Navbar = ({
-  active = 'Organizations List',
-  onNavigate = () => {},
-  isAuthenticated = false,
-  onLogout = () => {},
-}) => {
+const Navbar = ({ isAuthenticated = false, dashboardPath = '/admin', onLogout = () => {} }) => {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false) // mobile menu
-  const [settingsOpen, setSettingsOpen] = useState(false) // desktop account dropdown
+  const [settingsOpen, setSettingsOpen] = useState(false) // account dropdown
   const settingsRef = useRef(null)
 
-  // Close the account dropdown when clicking outside it.
   useEffect(() => {
     const handler = (e) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
-        setSettingsOpen(false)
-      }
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) setSettingsOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const navigate = (page) => (e) => {
-    e.preventDefault()
+  const go = (path) => () => {
     setOpen(false)
     setSettingsOpen(false)
-    onNavigate(page)
+    if (path) navigate(path)
   }
-  const goHome = navigate('home')
-  const goDirectory = navigate('directory')
-  const goDashboard = navigate('admin')
-  const goLogin = navigate('login')
-  const goProfile = navigate('profile')
 
-  const doLogout = (e) => {
-    e.preventDefault()
+  const doLogout = () => {
     setOpen(false)
     setSettingsOpen(false)
     onLogout()
   }
 
-  const navHandler = (item) =>
-    item === 'Home' ? goHome : item === 'Organizations List' ? goDirectory : undefined
-
-  // Smaller buttons for the right-side account controls (Dashboard + Settings).
-  const rightBtn =
-    'flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium transition hover:bg-white/10'
-
   const navLink = (item, extra = '') =>
     'whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ' +
-    (item === active ? 'bg-white text-emerald-900' : 'text-emerald-50 hover:bg-white/10') +
+    (item.path && pathname === item.path
+      ? 'bg-white text-emerald-900'
+      : 'text-emerald-50 hover:bg-white/10') +
     (extra ? ' ' + extra : '')
+
+  const rightBtn =
+    'flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium transition hover:bg-white/10'
+  const dashActive =
+    'flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-emerald-900 transition'
 
   return (
     <header className="bg-emerald-900 text-white shadow-md">
-      {/* Top bar: title + centered nav (desktop) / hamburger (mobile) */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-6">
-        <a href="#" onClick={goHome} className="flex min-w-0 items-center gap-2.5 md:justify-self-start">
+        <button onClick={go('/')} className="flex min-w-0 items-center gap-2.5 md:justify-self-start">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15">
             <Landmark className="h-5 w-5" />
           </span>
           <span className="truncate text-base font-semibold sm:text-lg">
             LCO &amp; Organization Website
           </span>
-        </a>
+        </button>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-2 md:flex md:justify-self-center">
           {NAV_ITEMS.map((item) => (
-            <a key={item} href="#" onClick={navHandler(item)} className={navLink(item)}>
-              {item}
-            </a>
+            <button key={item.label} onClick={go(item.path)} className={navLink(item)}>
+              {item.label}
+            </button>
           ))}
         </nav>
 
-        {/* Desktop right side: Dashboard + account dropdown (auth) or login */}
+        {/* Desktop right side */}
         {isAuthenticated ? (
           <div className="hidden items-center gap-2 md:flex md:justify-self-end">
-            <a
-              href="#"
-              onClick={goDashboard}
-              className={
-                active === 'Dashboard'
-                  ? 'flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-emerald-900 transition'
-                  : rightBtn
-              }
+            <button
+              onClick={go(dashboardPath)}
+              className={pathname === dashboardPath ? dashActive : rightBtn}
             >
               <LayoutDashboard className="h-4 w-4" /> Dashboard
-            </a>
+            </button>
 
             <div ref={settingsRef} className="relative">
               <button
@@ -105,32 +91,20 @@ const Navbar = ({
               </button>
               {settingsOpen && (
                 <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-lg bg-white py-1 text-slate-700 shadow-lg ring-1 ring-slate-200">
-                  <a
-                    href="#"
-                    onClick={goProfile}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-slate-50"
-                  >
+                  <button onClick={go('/profile')} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-slate-50">
                     <UserCog className="h-4 w-4" /> Profile
-                  </a>
-                  <a
-                    href="#"
-                    onClick={doLogout}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
-                  >
+                  </button>
+                  <button onClick={doLogout} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50">
                     <LogOut className="h-4 w-4" /> Logout
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <a
-            href="#"
-            onClick={goLogin}
-            className={rightBtn + ' hidden md:flex md:justify-self-end'}
-          >
+          <button onClick={go('/login')} className={rightBtn + ' hidden md:flex md:justify-self-end'}>
             <User className="h-4 w-4" /> Login
-          </a>
+          </button>
         )}
 
         {/* Mobile hamburger */}
@@ -149,47 +123,29 @@ const Navbar = ({
       {open && (
         <nav className="flex flex-col gap-1 border-t border-white/10 px-4 pb-4 pt-2 md:hidden">
           {NAV_ITEMS.map((item) => (
-            <a key={item} href="#" onClick={navHandler(item)} className={navLink(item, 'block')}>
-              {item}
-            </a>
+            <button key={item.label} onClick={go(item.path)} className={navLink(item, 'block text-left')}>
+              {item.label}
+            </button>
           ))}
           {isAuthenticated ? (
-            <>
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-emerald-200/70">
-                  Settings
-                </p>
-                <a
-                  href="#"
-                  onClick={goDashboard}
-                  className="flex items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10"
-                >
-                  <LayoutDashboard className="h-5 w-5" /> Dashboard
-                </a>
-                <a
-                  href="#"
-                  onClick={goProfile}
-                  className="flex items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10"
-                >
-                  <UserCog className="h-5 w-5" /> Profile
-                </a>
-                <a
-                  href="#"
-                  onClick={doLogout}
-                  className="flex items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10"
-                >
-                  <LogOut className="h-5 w-5" /> Logout
-                </a>
-              </div>
-            </>
+            <div className="mt-2 border-t border-white/10 pt-2">
+              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-emerald-200/70">
+                Settings
+              </p>
+              <button onClick={go(dashboardPath)} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">
+                <LayoutDashboard className="h-5 w-5" /> Dashboard
+              </button>
+              <button onClick={go('/profile')} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">
+                <UserCog className="h-5 w-5" /> Profile
+              </button>
+              <button onClick={doLogout} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">
+                <LogOut className="h-5 w-5" /> Logout
+              </button>
+            </div>
           ) : (
-            <a
-              href="#"
-              onClick={goLogin}
-              className="mt-1 flex items-center gap-2 rounded-md border border-white/30 px-4 py-2.5 text-base font-medium text-white transition hover:bg-white/10"
-            >
+            <button onClick={go('/login')} className="mt-1 flex w-full items-center gap-2 rounded-md border border-white/30 px-4 py-2.5 text-base font-medium text-white transition hover:bg-white/10">
               <User className="h-5 w-5" /> Login
-            </a>
+            </button>
           )}
         </nav>
       )}

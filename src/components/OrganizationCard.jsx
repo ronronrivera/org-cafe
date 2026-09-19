@@ -11,39 +11,63 @@ const FacebookIcon = ({ className }) => (
 const OrganizationCard = ({ org, index = 0 }) => {
   const accent = accentStyles[org.accent] ?? accentStyles.emerald
   const badge = categoryBadge[org.category_name] ?? 'bg-slate-100 text-slate-700'
+  const initials =
+    org.initials || (org.org_name ? org.org_name.slice(0, 2).toUpperCase() : '?')
 
   return (
     <article
       className="group animate-fade-in-up overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      {/* Colored header with logo tile */}
-      <div className={`relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br ${accent.header}`}>
+      {/* Header: real background image if set, else the accent gradient */}
+      <div
+        className={
+          'relative flex h-40 items-center justify-center overflow-hidden ' +
+          (org.background_image ? 'bg-slate-200 bg-cover bg-center' : `bg-gradient-to-br ${accent.header}`)
+        }
+        style={org.background_image ? { backgroundImage: `url(${org.background_image})` } : undefined}
+      >
         <span className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10" />
-        <div className={`flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-bold text-white transition duration-300 group-hover:scale-110 ${accent.tile}`}>
-          {org.initials}
-        </div>
+        {org.logo ? (
+          <img
+            src={org.logo}
+            alt=""
+            className="h-20 w-20 rounded-2xl object-cover shadow-md transition duration-300 group-hover:scale-110"
+          />
+        ) : (
+          <div className={`flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-bold text-white transition duration-300 group-hover:scale-110 ${accent.tile}`}>
+            {initials}
+          </div>
+        )}
       </div>
 
       <div className="p-5">
-        <h3 className="text-lg font-bold text-slate-800">{org.org_name}</h3>
-        <p className="text-sm text-slate-400">({org.abbreviation})</p>
+        <h3 className="text-lg font-bold text-slate-800">{org.org_name || 'Organization name'}</h3>
+        {org.abbreviation && <p className="text-sm text-slate-400">({org.abbreviation})</p>}
 
-        <span className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${badge}`}>
-          {org.category_name}
-        </span>
+        {org.category_name && (
+          <span className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${badge}`}>
+            {org.category_name}
+          </span>
+        )}
 
-        <p className="mt-3 text-sm leading-relaxed text-slate-500">{org.description}</p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-500">
+          {org.description || 'Organization description will appear here.'}
+        </p>
 
         <div className="mt-5 flex gap-3">
           <a
             href={org.fb_page_link}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:text-sm"
           >
             <FacebookIcon className="h-4 w-4 shrink-0 text-[#1877F2]" /> Facebook Page
           </a>
           <a
             href={org.join_form_link}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-emerald-800 px-4 py-2 text-xs font-medium text-white transition hover:bg-emerald-900 sm:text-sm"
           >
             <Globe className="h-4 w-4 shrink-0" /> Website

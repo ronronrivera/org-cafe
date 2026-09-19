@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { Search, Users, Megaphone, UserPlus, ReceiptText, Globe } from 'lucide-react'
 
 // Content is drawn from the SRS system features (§3.1, §3.2, §3.5) and the
@@ -37,7 +38,9 @@ const FEATURES = [
 
 const CATEGORIES = ['Academic', 'Cultural', 'Recreation', 'Environmental', 'Technical', 'Religious']
 
-const Home = ({ onNavigate = () => {} }) => {
+const Home = () => {
+  const navigate = useNavigate()
+  const onNavigate = (dest) => navigate(dest === 'directory' ? '/organizations' : `/${dest}`)
   return (
     <div>
       {/* Hero */}
