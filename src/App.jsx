@@ -97,7 +97,7 @@ const App = () => {
         <Route path="/app" element={<DashboardRedirect {...guardProps} />} />
         <Route
           path="/login"
-          element={session ? <Navigate to={dashboardPath} replace /> : <Login />}
+          element={session ? <Navigate to="/app" replace /> : <Login />}
         />
         <Route
           path="/profile"
