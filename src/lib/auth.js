@@ -49,6 +49,48 @@ export async function signOut() {
 }
 
 /**
+ * Change the signed-in user's email. Supabase sends a confirmation link; the
+ * change only takes effect once the user confirms it from their inbox.
+ *
+ * @param {string} newEmail
+ * @returns {Promise<{ error: string | null }>}
+ */
+export async function updateEmail(newEmail) {
+  const { error } = await supabase.auth.updateUser({ email: newEmail.trim() })
+  return { error: error?.message ?? null }
+}
+
+/**
+ * Change the signed-in user's password.
+ *
+ * `supabase.auth.updateUser` does NOT verify the current password, so we first
+ * re-authenticate with it — otherwise anyone with an open session (e.g. a shared
+ * computer) could silently change the password. Only on successful re-auth do we
+ * apply the new password.
+ *
+ * @param {string} currentPassword
+ * @param {string} newPassword
+ * @returns {Promise<{ error: string | null }>}
+ */
+export async function updatePassword(currentPassword, newPassword) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) {
+    return { error: 'No active session. Please sign in again.' }
+  }
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+  if (reauthError) {
+    return { error: 'Current password is incorrect.' }
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  return { error: error?.message ?? null }
+}
+
+/**
  * Resolve the current session's role without exposing the hidden mapping tables.
  * Returns 'admin', 'org_rep', or null (not signed in / no role).
  */

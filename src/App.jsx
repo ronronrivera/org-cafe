@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Directory from './pages/Directory'
 import Login from './pages/Login'
 import Admin from './pages/Admin'
+import Profile from './pages/Profile'
 import { supabase } from './lib/supabaseClient'
 import { getCurrentRole, signOut } from './lib/auth'
 
@@ -40,12 +41,19 @@ const App = () => {
   const renderPage = () => {
     if (page === 'login') return <Login onSuccess={() => setPage('admin')} />
     if (page === 'admin') return <Admin email={session?.user?.email} />
+    if (page === 'profile') return <Profile email={session?.user?.email} />
     if (page === 'directory') return <Directory />
     return <Home onNavigate={setPage} />
   }
 
   const activeNav =
-    page === 'home' ? 'Home' : page === 'directory' ? 'Organizations List' : ''
+    page === 'home'
+      ? 'Home'
+      : page === 'directory'
+        ? 'Organizations List'
+        : page === 'admin'
+          ? 'Dashboard'
+          : ''
 
   return (
     <div className="min-h-screen bg-slate-100">
