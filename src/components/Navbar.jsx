@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { label: 'Organizations List', path: '/organizations' },
 ]
 
-const Navbar = ({ isAuthenticated = false, dashboardPath = '/admin', onLogout = () => {} }) => {
+const Navbar = ({ isAuthenticated = false, onLogout = () => {} }) => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false) // mobile menu
@@ -45,8 +45,9 @@ const Navbar = ({ isAuthenticated = false, dashboardPath = '/admin', onLogout = 
 
   const rightBtn =
     'flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium transition hover:bg-white/10'
-  const dashActive =
+  const dashActiveClass =
     'flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-emerald-900 transition'
+  const onDashboard = pathname === '/admin' || pathname === '/dashboard'
 
   return (
     <header className="bg-emerald-900 text-white shadow-md">
@@ -72,10 +73,7 @@ const Navbar = ({ isAuthenticated = false, dashboardPath = '/admin', onLogout = 
         {/* Desktop right side */}
         {isAuthenticated ? (
           <div className="hidden items-center gap-2 md:flex md:justify-self-end">
-            <button
-              onClick={go(dashboardPath)}
-              className={pathname === dashboardPath ? dashActive : rightBtn}
-            >
+            <button onClick={go('/app')} className={onDashboard ? dashActiveClass : rightBtn}>
               <LayoutDashboard className="h-4 w-4" /> Dashboard
             </button>
 
@@ -132,7 +130,7 @@ const Navbar = ({ isAuthenticated = false, dashboardPath = '/admin', onLogout = 
               <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-emerald-200/70">
                 Settings
               </p>
-              <button onClick={go(dashboardPath)} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">
+              <button onClick={go('/app')} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">
                 <LayoutDashboard className="h-5 w-5" /> Dashboard
               </button>
               <button onClick={go('/profile')} className="flex w-full items-center gap-2 rounded-md px-4 py-2.5 text-base font-medium text-emerald-50 transition hover:bg-white/10">

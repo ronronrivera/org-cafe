@@ -29,6 +29,16 @@ const Guard = ({ authReady, session, roleResolved, role, allow, children }) => {
   return children
 }
 
+// Neutral "Dashboard" target: waits for the role to resolve, then sends the user
+// to the correct dashboard. Avoids guessing /admin before role is known.
+const DashboardRedirect = ({ authReady, session, roleResolved, role }) => {
+  if (!authReady || (session && !roleResolved)) return <FullPageLoader />
+  if (!session) return <Navigate to="/login" replace />
+  if (role === 'admin') return <Navigate to="/admin" replace />
+  if (role === 'org_rep') return <Navigate to="/dashboard" replace />
+  return <Navigate to="/" replace />
+}
+
 const App = () => {
   const navigate = useNavigate()
   const [session, setSession] = useState(null)
@@ -74,18 +84,17 @@ const App = () => {
     navigate('/')
   }
 
-  const dashboardPath = role === 'org_rep' ? '/dashboard' : '/admin'
-
   // Shared guard props so the module-level <Guard> knows the current auth state.
   const guardProps = { authReady, session, roleResolved, role }
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <Navbar isAuthenticated={!!session} dashboardPath={dashboardPath} onLogout={handleLogout} />
+      <Navbar isAuthenticated={!!session} onLogout={handleLogout} />
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/organizations" element={<Directory />} />
+        <Route path="/app" element={<DashboardRedirect {...guardProps} />} />
         <Route
           path="/login"
           element={session ? <Navigate to={dashboardPath} replace /> : <Login />}
