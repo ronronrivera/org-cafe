@@ -7,7 +7,7 @@ const CardGrid = ({ props = {} }) => {
       <div className="mx-auto grid max-w-5xl items-start gap-5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {cards.map((card, i) => (
           <div key={i} className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
-            {card.image && <img src={card.image} alt="" className="h-40 w-full object-cover" />}
+            {card.image && <img src={card.image} alt="" className="h-40 w-full object-cover" style={{ objectPosition: `center ${card.imgY ?? 50}%` }} />}
             <div className="p-4">
               <h3 className="font-semibold text-slate-800">{card.title || 'Card title'}</h3>
               {card.text && <p className="mt-1 text-sm text-slate-500">{card.text}</p>}

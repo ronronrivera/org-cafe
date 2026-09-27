@@ -107,7 +107,12 @@ const ComponentProps = ({ section, update, onUpload, uploading }) => {
                 <div className="flex items-center justify-between"><span className="text-xs text-slate-400">Card {idx + 1}</span>{p.cards.length > 3 && <button onClick={() => set({ cards: p.cards.filter((_, k) => k !== idx) })} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>}</div>
                 <input className={I + ' mt-1'} placeholder="Title" value={card.title} onChange={(e) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, title: e.target.value } : c)) })} />
                 <textarea rows={2} className={I + ' mt-1 resize-none'} placeholder="Text" value={card.text} onChange={(e) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, text: e.target.value } : c)) })} />
-                <div className="mt-1 flex items-center gap-2">{card.image && <img src={card.image} alt="" className="h-8 w-12 rounded object-cover" />}<FileBtn onUpload={onUpload} uploading={uploading} cb={(url) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, image: url } : c)) })} children="Image" /></div>
+                <div className="mt-1 flex items-center gap-2">{card.image && <img src={card.image} alt="" className="h-8 w-12 rounded object-cover" style={{ objectPosition: `center ${card.imgY ?? 50}%` }} />}<FileBtn onUpload={onUpload} uploading={uploading} cb={(url) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, image: url } : c)) })} children="Image" /></div>
+                {card.image && (
+                  <label className="mt-1 block text-xs text-slate-500">Image position: {card.imgY ?? 50}%
+                    <input type="range" min="0" max="100" value={card.imgY ?? 50} onChange={(e) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, imgY: Number(e.target.value) } : c)) })} className="mt-1 w-full accent-emerald-700" />
+                  </label>
+                )}
               </div>
             ))}
             <button onClick={() => set({ cards: [...(p.cards || []), { image: '', title: 'Card', text: 'Description' }] })} className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50"><Plus className="h-4 w-4" /> Add card</button>
