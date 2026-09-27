@@ -6,21 +6,51 @@ export const CANVAS_W = 900
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2))
 
 // ---- Component blocks (pre-built, picked from a library; devs add new ones) ----
+// Structural / interactive components (their content is configured via props).
+// Text-and-button blocks (Hero, CTA) are TEMPLATES instead — see newTemplateSection.
 export const COMPONENTS = {
   header: { label: 'Header / Nav', defaults: { title: 'Organization', logo: '', links: [{ label: 'Home', href: '#' }, { label: 'About', href: '#' }], bg: '#0f766e', color: '#ffffff' } },
-  hero: { label: 'Hero', defaults: { heading: 'Welcome', subheading: 'Your organization tagline', buttonLabel: 'Learn more', buttonHref: '#', align: 'center', bgColor: '#0f766e', color: '#ffffff', image: '', overlay: 35, height: 380 } },
-  text: { label: 'Text', defaults: { heading: 'Section title', body: 'Write something here…', align: 'left', color: '#0f172a', bodyColor: '#475569' } },
-  cta: { label: 'Call to action', defaults: { text: 'Ready to join us?', buttonLabel: 'Join now', buttonHref: '#', bg: '#059669', color: '#ffffff' } },
   cardgrid: { label: 'Card grid', defaults: { title: '', columns: 3, cards: [{ image: '', title: 'Card', text: 'Description' }, { image: '', title: 'Card', text: 'Description' }, { image: '', title: 'Card', text: 'Description' }] } },
   gallery: { label: 'Gallery', defaults: { images: [], columns: 3 } },
   carousel: { label: 'Carousel', defaults: { images: [], height: 360, interval: 3500, rounded: 16 } },
   footer: { label: 'Footer', defaults: { text: '© 2026 Organization', links: [{ label: 'Facebook', href: '#' }], bg: '#0f172a', color: '#e2e8f0' } },
 }
+
+// Templates: a canvas section pre-filled with movable/removable/editable elements.
+export const TEMPLATES = { hero: 'Hero', cta: 'Call to action' }
+export const newTemplateSection = (kind) => {
+  const mk = (type, o) => { const b = newElement(type); return { ...b, ...o, style: { ...b.style, ...(o.style || {}) } } }
+  if (kind === 'hero') {
+    const s = newCanvasSection(380)
+    s.background = { type: 'color', color: '#0f766e', image: null }
+    s.elements = [
+      mk('heading', { x: 150, y: 110, w: 600, content: 'Welcome', style: { fontSize: 48, color: '#ffffff', bold: true, align: 'center' } }),
+      mk('text', { x: 200, y: 200, w: 500, content: 'Your organization tagline', style: { fontSize: 18, color: '#ffffff', align: 'center' } }),
+      mk('button', { x: 370, y: 260, w: 160, h: 48, content: 'Learn more', href: '#', style: { fontSize: 16, color: '#0f766e', bg: '#ffffff', radius: 10, align: 'center' } }),
+    ]
+    return s
+  }
+  if (kind === 'cta') {
+    const s = newCanvasSection(200)
+    s.background = { type: 'color', color: '#059669', image: null }
+    s.elements = [
+      mk('heading', { x: 150, y: 48, w: 600, content: 'Ready to join us?', style: { fontSize: 30, color: '#ffffff', bold: true, align: 'center' } }),
+      mk('button', { x: 370, y: 115, w: 160, h: 48, content: 'Join now', href: '#', style: { fontSize: 16, color: '#059669', bg: '#ffffff', radius: 10, align: 'center' } }),
+    ]
+    return s
+  }
+  return newCanvasSection()
+}
+// Default box height per component (also the coordinate space for overlay elements).
+export const COMPONENT_HEIGHT = { header: 72, hero: 380, text: 220, button: 90, cta: 200, cardgrid: 340, gallery: 340, carousel: 360, footer: 150 }
+
 export const newComponentSection = (component) => ({
   id: uid(),
   kind: 'component',
   component,
   props: { ...(COMPONENTS[component]?.defaults ?? {}) },
+  height: COMPONENTS[component]?.defaults?.height || COMPONENT_HEIGHT[component] || 300,
+  elements: [], // free elements overlaid on top of the component
 })
 
 // A freeform (Canva-style) design section.
@@ -99,7 +129,14 @@ export const seedConfigFromOrg = (org = {}) => {
 
 const normalizeSection = (s) => {
   if (s?.kind === 'component') {
-    return { id: s.id || uid(), kind: 'component', component: s.component, props: { ...(COMPONENTS[s.component]?.defaults ?? {}), ...(s.props ?? {}) } }
+    return {
+      id: s.id || uid(),
+      kind: 'component',
+      component: s.component,
+      props: { ...(COMPONENTS[s.component]?.defaults ?? {}), ...(s.props ?? {}) },
+      height: Number(s.height) || s.props?.height || COMPONENT_HEIGHT[s.component] || 300,
+      elements: Array.isArray(s.elements) ? s.elements : [],
+    }
   }
   return {
     id: s?.id || uid(),

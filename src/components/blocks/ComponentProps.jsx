@@ -71,6 +71,20 @@ const ComponentProps = ({ section, update, onUpload, uploading }) => {
           <div className="flex gap-4"><Color label="Heading" value={p.color} onChange={(v) => set({ color: v })} /><Color label="Body" value={p.bodyColor} onChange={(v) => set({ bodyColor: v })} /></div>
         </div>
       )
+    case 'button':
+      return (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Button</p>
+          <label className="block"><span className={L}>Label</span><input className={I + ' mt-1'} value={p.label} onChange={(e) => set({ label: e.target.value })} /></label>
+          <label className="block"><span className={L}>Link (URL)</span><input className={I + ' mt-1'} value={p.href} onChange={(e) => set({ href: e.target.value })} placeholder="https://…" /></label>
+          <div className="flex gap-2">{['left', 'center', 'right'].map((a) => (<button key={a} onClick={() => set({ align: a })} className={'flex-1 rounded-md border px-2 py-1 text-xs font-medium capitalize ' + (p.align === a ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600')}>{a}</button>))}</div>
+          <div className="flex items-center gap-4"><Color label="Fill" value={p.bg} onChange={(v) => set({ bg: v })} /><Color label="Text" value={p.color} onChange={(v) => set({ color: v })} /></div>
+          <div className="flex gap-2">
+            <label className="flex-1"><span className={L}>Font size</span><input type="number" className={I + ' mt-1'} value={p.size} onChange={(e) => set({ size: Number(e.target.value) || 12 })} /></label>
+            <label className="flex-1"><span className={L}>Corner radius</span><input type="number" className={I + ' mt-1'} value={p.radius} onChange={(e) => set({ radius: Number(e.target.value) })} /></label>
+          </div>
+        </div>
+      )
     case 'cta':
       return (
         <div className="space-y-3">
@@ -90,7 +104,7 @@ const ComponentProps = ({ section, update, onUpload, uploading }) => {
           <div className="space-y-2">
             {(p.cards || []).map((card, idx) => (
               <div key={idx} className="rounded-md border border-slate-200 p-2">
-                <div className="flex items-center justify-between"><span className="text-xs text-slate-400">Card {idx + 1}</span><button onClick={() => set({ cards: p.cards.filter((_, k) => k !== idx) })} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button></div>
+                <div className="flex items-center justify-between"><span className="text-xs text-slate-400">Card {idx + 1}</span>{p.cards.length > 3 && <button onClick={() => set({ cards: p.cards.filter((_, k) => k !== idx) })} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>}</div>
                 <input className={I + ' mt-1'} placeholder="Title" value={card.title} onChange={(e) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, title: e.target.value } : c)) })} />
                 <textarea rows={2} className={I + ' mt-1 resize-none'} placeholder="Text" value={card.text} onChange={(e) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, text: e.target.value } : c)) })} />
                 <div className="mt-1 flex items-center gap-2">{card.image && <img src={card.image} alt="" className="h-8 w-12 rounded object-cover" />}<FileBtn onUpload={onUpload} uploading={uploading} cb={(url) => set({ cards: p.cards.map((c, k) => (k === idx ? { ...c, image: url } : c)) })} children="Image" /></div>

@@ -7,16 +7,33 @@ import {
   PanelBottom, Sparkles, Megaphone, Images,
 } from 'lucide-react'
 
-const COMPONENT_ICONS = { header: PanelTop, hero: Sparkles, text: Type, cta: Megaphone, cardgrid: LayoutGrid, gallery: Images, carousel: GalleryHorizontal, footer: PanelBottom }
+const COMPONENT_ICONS = { header: PanelTop, hero: Sparkles, text: Type, button: Square, cta: Megaphone, cardgrid: LayoutGrid, gallery: Images, carousel: GalleryHorizontal, footer: PanelBottom }
 import CanvasElement from '../components/CanvasElement'
 import Block from '../components/blocks/Block'
 import ComponentProps from '../components/blocks/ComponentProps'
 import { getMyOrganization, uploadImage } from '../lib/organizations'
 import {
   getPageLayout, savePageLayout, normalizeConfig, seedConfigFromOrg, newElement,
-  newPage, newCanvasSection, newComponentSection, PRESET_COLORS, CANVAS_W, COMPONENTS,
+  newPage, newCanvasSection, newComponentSection, newTemplateSection, TEMPLATES, PRESET_COLORS, CANVAS_W, COMPONENTS,
 } from '../lib/pageBuilder'
 import { slugify } from '../lib/slug'
+
+// Measures its children and reports their height (for auto-sizing component sections).
+const AutoHeight = ({ onHeight, children }) => {
+  const ref = useRef(null)
+  const cb = useRef(onHeight)
+  cb.current = onHeight
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const report = () => cb.current(el.offsetHeight)
+    report()
+    const ro = new ResizeObserver(report)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return <div ref={ref}>{children}</div>
+}
 
 const clampEl = (el, W, H) => {
   const w = Math.min(el.w, W)
@@ -119,28 +136,24 @@ const PageBuilder = () => {
       ...c,
       pages: c.pages.map((p) => ({
         ...p,
-        sections: p.sections.map((s) => (s.kind === 'canvas' ? { ...s, elements: fn(s.elements, p, s) } : s)),
+        sections: p.sections.map((s) => ({ ...s, elements: fn(s.elements || [], p, s) })),
       })),
     }))
   const updateEl = (id, patch) => { snapshot(true); mapAllElements((els) => els.map((e) => (e.id === id ? { ...e, ...patch } : e))) }
   const updateStyle = (id, patch) => { snapshot(true); mapAllElements((els) => els.map((e) => (e.id === id ? { ...e, style: { ...e.style, ...patch } } : e))) }
   const deleteEl = (id) => { snapshot(); mapAllElements((els) => els.filter((e) => e.id !== id)); setSelectedId((s) => (s === id ? null : s)) }
 
-  const activeCanvasId = () => {
-    const p = config.pages[current]
-    const active = p.sections.find((s) => s.id === activeSectionId && s.kind === 'canvas')
-    return (active || p.sections.find((s) => s.kind === 'canvas'))?.id ?? null
-  }
   const addToSection = (el) => {
-    const secId = activeCanvasId()
-    if (!secId) return
+    const p = config.pages[current]
+    const sec = p.sections.find((s) => s.id === activeSectionId) || p.sections[0]
+    if (!sec) return
     snapshot()
     setConfig((c) => ({
       ...c,
-      pages: c.pages.map((p, pi) => (pi === current ? {
-        ...p,
-        sections: p.sections.map((s) => (s.id === secId ? { ...s, elements: [...s.elements, clampEl(el, p.width, s.height)] } : s)),
-      } : p)),
+      pages: c.pages.map((pg, pi) => (pi === current ? {
+        ...pg,
+        sections: pg.sections.map((s) => (s.id === sec.id ? { ...s, elements: [...(s.elements || []), clampEl(el, pg.width, s.height)] } : s)),
+      } : pg)),
     }))
     setSelectedId(el.id); setSelectedSectionId(null)
   }
@@ -160,6 +173,9 @@ const PageBuilder = () => {
   const patchSection = (id, fn) => setConfig((c) => ({ ...c, pages: c.pages.map((p, pi) => (pi === current ? { ...p, sections: p.sections.map((s) => (s.id === id ? fn(s) : s)) } : p)) }))
   const patchSectionBg = (id, patch) => { snapshot(true); patchSection(id, (s) => ({ ...s, background: { ...s.background, ...patch } })) }
   const setSectionHeight = (id, h) => { snapshot(true); patchSection(id, (s) => ({ ...s, height: Math.max(120, h) })) }
+  // Auto-fit a component section to its measured content (no history entry).
+  const setSectionHeightSilent = (id, h) =>
+    setConfig((c) => ({ ...c, pages: c.pages.map((p) => ({ ...p, sections: p.sections.map((s) => (s.id === id && s.kind === 'component' && Math.abs((s.height || 0) - h) > 1 ? { ...s, height: Math.round(h) } : s)) })) }))
   const updateComponentProps = (id, patch) => { snapshot(true); patchSection(id, (s) => ({ ...s, props: { ...s.props, ...patch } })) }
   const addSection = (section) => {
     snapshot()
@@ -216,7 +232,7 @@ const PageBuilder = () => {
     // Reassign to whichever canvas section the element was dropped over.
     setConfig((c) => {
       let el
-      c.pages.forEach((p) => p.sections.forEach((s) => { if (s.kind === 'canvas') { const f = s.elements.find((x) => x.id === d.id); if (f) el = f } }))
+      c.pages.forEach((p) => p.sections.forEach((s) => { const f = (s.elements || []).find((x) => x.id === d.id); if (f) el = f }))
       const srcRect = document.getElementById(`sec-${d.srcSection}`)?.getBoundingClientRect()
       if (!el || !srcRect) return c
       const absTop = srcRect.top + el.y
@@ -224,22 +240,18 @@ const PageBuilder = () => {
       let target = null
       let targetRect = null
       c.pages.forEach((p) => p.sections.forEach((s) => {
-        if (s.kind !== 'canvas') return
         const r = document.getElementById(`sec-${s.id}`)?.getBoundingClientRect()
         if (r && absTop >= r.top && absTop <= r.bottom) { target = s; targetRect = r }
       }))
       if (!target || target.id === d.srcSection) return c
-      const W = target.width || CANVAS_W
       const moved = clampEl({ ...el, x: Math.round(absLeft - targetRect.left), y: Math.round(absTop - targetRect.top) }, targetRect.width, target.height)
-      void W
       return {
         ...c,
         pages: c.pages.map((p) => ({
           ...p,
           sections: p.sections.map((s) => {
-            if (s.kind !== 'canvas') return s
-            if (s.id === d.srcSection) return { ...s, elements: s.elements.filter((x) => x.id !== d.id) }
-            if (s.id === target.id) return { ...s, elements: [...s.elements, moved] }
+            if (s.id === d.srcSection) return { ...s, elements: (s.elements || []).filter((x) => x.id !== d.id) }
+            if (s.id === target.id) return { ...s, elements: [...(s.elements || []), moved] }
             return s
           }),
         })),
@@ -300,7 +312,7 @@ const PageBuilder = () => {
 
   const openMenu = (e, el, sectionId) => { e.preventDefault(); setActiveSectionId(sectionId); setSelectedId(el.id); setSelectedSectionId(null); setMenu({ x: e.clientX, y: e.clientY }) }
 
-  // ---- pen ----
+  // ---- pen / section select ----
   const onSecDown = (e, section) => {
     setActiveSectionId(section.id)
     if (tool === 'pen') {
@@ -309,7 +321,12 @@ const PageBuilder = () => {
       const rect = e.currentTarget.getBoundingClientRect()
       drawRef.current = { sectionId: section.id, pid: e.pointerId, pts: [[Math.round(e.clientX - rect.left), Math.round(e.clientY - rect.top)]] }
       setDrawPreview({ sectionId: section.id, pts: drawRef.current.pts })
-    } else { setSelectedId(null); setSelectedSectionId(null); setMenu(null) }
+    } else {
+      // Clicking a section's background selects it (component → show its props).
+      setSelectedId(null)
+      setMenu(null)
+      setSelectedSectionId(section.kind === 'component' ? section.id : null)
+    }
   }
   const onSecMove = (e) => {
     const d = drawRef.current
@@ -481,7 +498,7 @@ const PageBuilder = () => {
               <>
                 <button onClick={() => addEl('heading')} className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"><Heading1 className="h-4 w-4" /> Add heading</button>
                 <button onClick={() => addEl('text')} className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"><Type className="h-4 w-4" /> Add text</button>
-                <p className="text-[11px] text-slate-400">Added to the active canvas section.</p>
+                <p className="text-[11px] text-slate-400">Adds to the active section (click a section to make it active).</p>
               </>
             )}
             {tab === 'elements' && (
@@ -513,13 +530,19 @@ const PageBuilder = () => {
               <>
                 <p className={label}>Add a section to this page</p>
                 <button onClick={() => addSection(newCanvasSection())} className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"><LayoutGrid className="h-4 w-4" /> Canvas (freeform)</button>
+                {Object.entries(TEMPLATES).map(([key, name]) => {
+                  const Icon = COMPONENT_ICONS[key] || LayoutGrid
+                  return (
+                    <button key={key} onClick={() => addSection(newTemplateSection(key))} className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"><Icon className="h-4 w-4" /> {name}</button>
+                  )
+                })}
                 {Object.entries(COMPONENTS).map(([key, c]) => {
                   const Icon = COMPONENT_ICONS[key] || LayoutGrid
                   return (
                     <button key={key} onClick={() => addSection(newComponentSection(key))} className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"><Icon className="h-4 w-4" /> {c.label}</button>
                   )
                 })}
-                <p className="pt-2 text-[11px] text-slate-400">Sections stack top-to-bottom. Reorder / delete each from its header on the canvas.</p>
+                <p className="pt-2 text-[11px] text-slate-400">Hero &amp; CTA are templates — their text/buttons are editable elements. Sections stack top-to-bottom.</p>
               </>
             )}
             {tab === 'design' && (
@@ -543,8 +566,10 @@ const PageBuilder = () => {
                     )}
                     <label className="mt-3 block"><span className={label}>Section height (px)</span><input type="number" className={input + ' mt-1'} value={activeSection.height} onChange={(e) => setSectionHeight(activeSection.id, Number(e.target.value) || 120)} /></label>
                   </div>
+                ) : activeSection ? (
+                  <p className="text-xs text-slate-400">This {activeSection.component} section auto-fits its content.</p>
                 ) : (
-                  <p className="text-xs text-slate-400">Select a canvas section to edit its background.</p>
+                  <p className="text-xs text-slate-400">Click a section to edit it.</p>
                 )}
 
                 <label className="block"><span className={label}>Page {current + 1} width (px)</span><input type="number" className={input + ' mt-1'} value={pw(page)} onChange={(e) => { snapshot(true); setConfig((c) => ({ ...c, pages: c.pages.map((p, i) => (i === current ? { ...p, width: Math.max(320, Math.min(maxCanvasWidth(), Number(e.target.value) || 320)) } : p)) })) }} /></label>
@@ -583,43 +608,41 @@ const PageBuilder = () => {
                   </span>
                 </div>
 
-                {section.kind === 'component' ? (
-                  <div
-                    onPointerDown={() => { setActiveSectionId(section.id); setSelectedSectionId(section.id); setSelectedId(null); setTab('design') }}
-                    className={'cursor-pointer ' + (selectedSectionId === section.id ? 'outline outline-2 outline-blue-500' : '')}
-                  >
-                    <Block section={section} editable />
-                  </div>
-                ) : (
-                  <div
-                    id={`sec-${section.id}`}
-                    onPointerDown={(e) => onSecDown(e, section)}
-                    onPointerMove={onSecMove}
-                    onPointerUp={onSecUp}
-                    className="relative overflow-hidden shadow-xl"
-                    style={{ width: pw(page), height: section.height, outline: section.id === activeSectionId ? '2px solid #10b981' : 'none', outlineOffset: 2, cursor: tool === 'pen' ? 'crosshair' : 'default', ...secBgStyle(section) }}
-                  >
-                    {section.elements.map((el) => (
-                      <div
-                        key={el.id}
-                        onPointerDown={(e) => onElDown(e, el, section.id)}
-                        onPointerMove={onElMove}
-                        onPointerUp={onElUp}
-                        onContextMenu={(e) => openMenu(e, el, section.id)}
-                        style={{ position: 'absolute', left: el.x, top: el.y, width: el.w, cursor: 'move', outline: selectedId === el.id ? '2px solid #2563eb' : 'none', outlineOffset: 2, touchAction: 'none', pointerEvents: tool === 'pen' ? 'none' : 'auto' }}
-                      >
-                        <CanvasElement el={el} editable positioned={false} />
-                        {el.type === 'video' && (
-                          <div onPointerDown={(e) => onElDown(e, el, section.id)} onPointerMove={onElMove} onPointerUp={onElUp} title="Drag video" className="absolute -left-3 -top-3 z-10 flex h-7 w-7 cursor-move items-center justify-center rounded-full bg-blue-500 text-white shadow" style={{ touchAction: 'none' }}><Move className="h-4 w-4" /></div>
-                        )}
-                        {selectedId === el.id && resizeHandles(el, section.id)}
-                      </div>
-                    ))}
-                    {drawPreview && drawPreview.sectionId === section.id && (
-                      <svg className="pointer-events-none absolute inset-0" width={pw(page)} height={section.height}><polyline points={drawPreview.pts.map((p) => p.join(',')).join(' ')} fill="none" stroke={penColor} strokeWidth={penWidth} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    )}
-                  </div>
-                )}
+                <div
+                  id={`sec-${section.id}`}
+                  onPointerDown={(e) => onSecDown(e, section)}
+                  onPointerMove={onSecMove}
+                  onPointerUp={onSecUp}
+                  className={'relative shadow-xl ' + (section.kind === 'canvas' ? 'overflow-hidden' : '')}
+                  style={{ width: pw(page), ...(section.kind === 'canvas' ? { height: section.height } : {}), outline: section.id === activeSectionId ? '2px solid #10b981' : 'none', outlineOffset: 2, cursor: tool === 'pen' ? 'crosshair' : 'default', ...(section.kind === 'canvas' ? secBgStyle(section) : {}) }}
+                >
+                  {section.kind === 'component' && (
+                    <div className="pointer-events-none">
+                      <AutoHeight onHeight={(h) => setSectionHeightSilent(section.id, h)}>
+                        <Block section={section} editable />
+                      </AutoHeight>
+                    </div>
+                  )}
+                  {(section.elements || []).map((el) => (
+                    <div
+                      key={el.id}
+                      onPointerDown={(e) => onElDown(e, el, section.id)}
+                      onPointerMove={onElMove}
+                      onPointerUp={onElUp}
+                      onContextMenu={(e) => openMenu(e, el, section.id)}
+                      style={{ position: 'absolute', left: el.x, top: el.y, width: el.w, cursor: 'move', outline: selectedId === el.id ? '2px solid #2563eb' : 'none', outlineOffset: 2, touchAction: 'none', pointerEvents: tool === 'pen' ? 'none' : 'auto' }}
+                    >
+                      <CanvasElement el={el} editable positioned={false} />
+                      {el.type === 'video' && (
+                        <div onPointerDown={(e) => onElDown(e, el, section.id)} onPointerMove={onElMove} onPointerUp={onElUp} title="Drag video" className="absolute -left-3 -top-3 z-10 flex h-7 w-7 cursor-move items-center justify-center rounded-full bg-blue-500 text-white shadow" style={{ touchAction: 'none' }}><Move className="h-4 w-4" /></div>
+                      )}
+                      {selectedId === el.id && resizeHandles(el, section.id)}
+                    </div>
+                  ))}
+                  {drawPreview && drawPreview.sectionId === section.id && (
+                    <svg className="pointer-events-none absolute inset-0" width={pw(page)} height={section.height}><polyline points={drawPreview.pts.map((p) => p.join(',')).join(' ')} fill="none" stroke={penColor} strokeWidth={penWidth} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  )}
+                </div>
               </div>
             ))}
 

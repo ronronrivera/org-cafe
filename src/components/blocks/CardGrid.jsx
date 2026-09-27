@@ -4,7 +4,7 @@ const CardGrid = ({ props = {} }) => {
   return (
     <section className="px-8 py-10">
       {props.title && <h2 className="mb-6 text-center text-2xl font-bold text-slate-800 md:text-3xl">{props.title}</h2>}
-      <div className="mx-auto grid max-w-5xl gap-5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+      <div className="mx-auto grid max-w-5xl items-start gap-5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {cards.map((card, i) => (
           <div key={i} className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
             {card.image && <img src={card.image} alt="" className="h-40 w-full object-cover" />}

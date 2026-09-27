@@ -38,31 +38,26 @@ const OrgPageView = ({ config }) => {
         const colW = page.width * scale
         return (
           <div key={page.id} className="mx-auto" style={{ width: colW, marginTop: pi === 0 ? 0 : 24 }}>
-            {page.sections.map((section, si) =>
-              section.kind === 'component' ? (
-                <div key={section.id} style={{ width: colW, marginTop: si === 0 ? 0 : 16 }}>
-                  <Block section={section} />
+            {page.sections.map((section, si) => (
+              <div key={section.id} style={{ height: section.height * scale, marginTop: si === 0 ? 0 : 16 }}>
+                <div
+                  style={{
+                    width: page.width,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                    position: 'relative',
+                    ...(section.kind === 'canvas'
+                      ? { height: section.height, overflow: 'hidden', ...bgStyle(section.background) }
+                      : {}),
+                  }}
+                >
+                  {section.kind === 'component' && <Block section={section} />}
+                  {(section.elements || []).map((el) => (
+                    <CanvasElement key={el.id} el={el} />
+                  ))}
                 </div>
-              ) : (
-                <div key={section.id} style={{ height: section.height * scale, marginTop: si === 0 ? 0 : 16 }}>
-                  <div
-                    style={{
-                      width: page.width,
-                      height: section.height,
-                      transform: `scale(${scale})`,
-                      transformOrigin: 'top left',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      ...bgStyle(section.background),
-                    }}
-                  >
-                    {section.elements.map((el) => (
-                      <CanvasElement key={el.id} el={el} />
-                    ))}
-                  </div>
-                </div>
-              ),
-            )}
+              </div>
+            ))}
           </div>
         )
       })}

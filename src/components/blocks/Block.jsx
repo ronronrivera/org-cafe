@@ -2,6 +2,7 @@ import Carousel from './Carousel'
 import Header from './Header'
 import Hero from './Hero'
 import TextBlock from './TextBlock'
+import ButtonBlock from './ButtonBlock'
 import CTA from './CTA'
 import CardGrid from './CardGrid'
 import Gallery from './Gallery'
@@ -16,6 +17,8 @@ const Block = ({ section, editable = false }) => {
       return <Hero props={section.props} editable={editable} />
     case 'text':
       return <TextBlock props={section.props} editable={editable} />
+    case 'button':
+      return <ButtonBlock props={section.props} editable={editable} />
     case 'cta':
       return <CTA props={section.props} editable={editable} />
     case 'cardgrid':
