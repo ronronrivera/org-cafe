@@ -77,6 +77,27 @@ const CanvasElement = ({ el, editable = false, positioned = true }) => {
     )
   }
 
+  if (el.type === 'shape') {
+    const fill = s.bg || '#059669'
+    if (el.shape === 'triangle') {
+      return (
+        <svg width={positioned ? el.w : '100%'} height={el.h} viewBox="0 0 100 100" preserveAspectRatio="none" style={{ ...base, height: el.h, display: 'block' }}>
+          <polygon points="50,0 100,100 0,100" fill={fill} />
+        </svg>
+      )
+    }
+    return (
+      <div
+        style={{
+          ...base,
+          height: el.h,
+          background: fill,
+          borderRadius: el.shape === 'ellipse' ? '50%' : s.radius ?? 8,
+        }}
+      />
+    )
+  }
+
   if (el.type === 'draw') {
     const pts = (el.points || []).map((p) => p.join(',')).join(' ')
     return (

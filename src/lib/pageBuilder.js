@@ -5,25 +5,51 @@ export const CANVAS_W = 900
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2))
 
-export const newPage = () => ({
+// ---- Component blocks (pre-built, picked from a library; devs add new ones) ----
+export const COMPONENTS = {
+  header: { label: 'Header / Nav', defaults: { title: 'Organization', logo: '', links: [{ label: 'Home', href: '#' }, { label: 'About', href: '#' }], bg: '#0f766e', color: '#ffffff' } },
+  hero: { label: 'Hero', defaults: { heading: 'Welcome', subheading: 'Your organization tagline', buttonLabel: 'Learn more', buttonHref: '#', align: 'center', bgColor: '#0f766e', color: '#ffffff', image: '', overlay: 35, height: 380 } },
+  text: { label: 'Text', defaults: { heading: 'Section title', body: 'Write something here…', align: 'left', color: '#0f172a', bodyColor: '#475569' } },
+  cta: { label: 'Call to action', defaults: { text: 'Ready to join us?', buttonLabel: 'Join now', buttonHref: '#', bg: '#059669', color: '#ffffff' } },
+  cardgrid: { label: 'Card grid', defaults: { title: '', columns: 3, cards: [{ image: '', title: 'Card', text: 'Description' }, { image: '', title: 'Card', text: 'Description' }, { image: '', title: 'Card', text: 'Description' }] } },
+  gallery: { label: 'Gallery', defaults: { images: [], columns: 3 } },
+  carousel: { label: 'Carousel', defaults: { images: [], height: 360, interval: 3500, rounded: 16 } },
+  footer: { label: 'Footer', defaults: { text: '© 2026 Organization', links: [{ label: 'Facebook', href: '#' }], bg: '#0f172a', color: '#e2e8f0' } },
+}
+export const newComponentSection = (component) => ({
   id: uid(),
-  width: CANVAS_W,
-  height: 1100,
+  kind: 'component',
+  component,
+  props: { ...(COMPONENTS[component]?.defaults ?? {}) },
+})
+
+// A freeform (Canva-style) design section.
+export const newCanvasSection = (height = 600) => ({
+  id: uid(),
+  kind: 'canvas',
+  height,
   background: { type: 'color', color: '#ffffff', image: null },
   elements: [],
 })
 
+export const newPage = () => ({ id: uid(), width: CANVAS_W, sections: [newCanvasSection()] })
+
 export const defaultConfig = () => ({
-  version: 3,
-  width: CANVAS_W,
+  version: 4,
   accent: '#059669',
   background: { type: 'color', color: '#e2e8f0', image: null }, // backdrop behind the pages
   pages: [
     {
-      ...newPage(),
-      elements: [
-        { id: uid(), type: 'heading', x: 80, y: 70, w: 620, content: 'Your Organization', style: { fontSize: 46, color: '#0f172a', bold: true, align: 'left' } },
-        { id: uid(), type: 'text', x: 80, y: 150, w: 620, content: 'Drag anything anywhere. Add text, buttons, images, and videos.', style: { fontSize: 18, color: '#475569', bold: false, align: 'left' } },
+      id: uid(),
+      width: CANVAS_W,
+      sections: [
+        {
+          ...newCanvasSection(1100),
+          elements: [
+            { id: uid(), type: 'heading', x: 80, y: 70, w: 620, content: 'Your Organization', style: { fontSize: 46, color: '#0f172a', bold: true, align: 'left' } },
+            { id: uid(), type: 'text', x: 80, y: 150, w: 620, content: 'Drag anything anywhere. Add text, buttons, images, and videos.', style: { fontSize: 18, color: '#475569', bold: false, align: 'left' } },
+          ],
+        },
       ],
     },
   ],
@@ -42,6 +68,8 @@ export const newElement = (type, accent = '#059669') => {
       return { ...base, type, w: 260, content: '', style: { radius: 12 } }
     case 'video':
       return { ...base, type, w: 400, content: '', style: { radius: 12 } } // content = file URL or YouTube link
+    case 'shape':
+      return { ...base, type, shape: 'rect', w: 160, h: 120, style: { bg: accent, radius: 8 } }
     default:
       return { ...base, type: 'text', w: 400, content: 'Text', style: { fontSize: 18, color: '#334155', bold: false, align: 'left' } }
   }
@@ -65,35 +93,46 @@ export const seedConfigFromOrg = (org = {}) => {
   if (org.fb_page_link) {
     els.push({ id: uid(), type: 'button', x: 80, y, w: 190, content: 'Facebook Page', href: org.fb_page_link, style: { fontSize: 16, color: '#ffffff', bg: accent, radius: 10, align: 'center' } })
   }
-  c.pages[0].elements = els
+  c.pages[0].sections[0].elements = els
   return c
 }
 
-// Each page has its own width. `Number(...) || fallback` recovers bad/NaN values.
-const normalizePage = (p, fallbackW) => ({
-  id: p.id || uid(),
-  width: Number(p.width) || fallbackW || CANVAS_W,
-  height: p.height || 1100,
-  background: { type: 'color', color: '#ffffff', image: null, ...(p.background ?? {}) },
-  elements: Array.isArray(p.elements) ? p.elements : [],
-})
+const normalizeSection = (s) => {
+  if (s?.kind === 'component') {
+    return { id: s.id || uid(), kind: 'component', component: s.component, props: { ...(COMPONENTS[s.component]?.defaults ?? {}), ...(s.props ?? {}) } }
+  }
+  return {
+    id: s?.id || uid(),
+    kind: 'canvas',
+    height: Number(s?.height) || 600,
+    background: { type: 'color', color: '#ffffff', image: null, ...(s?.background ?? {}) },
+    elements: Array.isArray(s?.elements) ? s.elements : [],
+  }
+}
+
+const normalizePage = (p, fallbackW) => {
+  // v4 page (has sections) or migrate a v3 page (has elements) into one canvas section.
+  const sections = Array.isArray(p.sections)
+    ? p.sections.map(normalizeSection)
+    : [normalizeSection({ id: uid(), kind: 'canvas', height: p.height, background: p.background, elements: p.elements })]
+  return { id: p.id || uid(), width: Number(p.width) || fallbackW || CANVAS_W, sections: sections.length ? sections : [newCanvasSection()] }
+}
 
 export const normalizeConfig = (config) => {
   const d = defaultConfig()
   if (!config) return d
-  // v3 — per-page width. A legacy top-level width is the fallback for pages missing one.
   if (Array.isArray(config.pages)) {
     return {
-      version: 3,
+      version: 4,
       accent: config.accent || d.accent,
       background: { ...d.background, ...(config.background ?? {}) },
       pages: config.pages.length ? config.pages.map((p) => normalizePage(p, Number(config.width))) : d.pages,
     }
   }
-  // v2 — single page: { page:{...}, elements:[...] } → wrap into one page
+  // very old v2 — single { page, elements } → one page, one canvas section
   if (Array.isArray(config.elements)) {
     return {
-      version: 3,
+      version: 4,
       accent: config.page?.accent || d.accent,
       background: { ...d.background },
       pages: [normalizePage({ width: config.page?.width, height: config.page?.height, background: config.page?.background, elements: config.elements })],

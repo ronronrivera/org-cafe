@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import CanvasElement from './CanvasElement'
+import Block from './blocks/Block'
 import { normalizeConfig } from '../lib/pageBuilder'
 
-// Read-only render of a multi-page canvas. Each page scales by its OWN width to
-// fit the viewport (pages can be different widths).
+// Read-only render of a multi-page, multi-section design. Canvas sections scale
+// by their page width; component blocks flow responsively.
 const OrgPageView = ({ config }) => {
   const cfg = normalizeConfig(config)
   const wrapRef = useRef(null)
@@ -32,25 +33,36 @@ const OrgPageView = ({ config }) => {
 
   return (
     <div ref={wrapRef} className="w-full" style={{ paddingTop: 24, paddingBottom: 24, minHeight: '100vh', ...backdropStyle }}>
-      {cfg.pages.map((page, idx) => {
+      {cfg.pages.map((page, pi) => {
         const scale = containerW ? Math.min(1, containerW / page.width) : 1
+        const colW = page.width * scale
         return (
-          <div key={page.id} className="mx-auto" style={{ width: page.width * scale, height: page.height * scale, marginTop: idx === 0 ? 0 : 24 }}>
-            <div
-              style={{
-                width: page.width,
-                height: page.height,
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                position: 'relative',
-                overflow: 'hidden',
-                ...bgStyle(page.background),
-              }}
-            >
-              {page.elements.map((el) => (
-                <CanvasElement key={el.id} el={el} />
-              ))}
-            </div>
+          <div key={page.id} className="mx-auto" style={{ width: colW, marginTop: pi === 0 ? 0 : 24 }}>
+            {page.sections.map((section, si) =>
+              section.kind === 'component' ? (
+                <div key={section.id} style={{ width: colW, marginTop: si === 0 ? 0 : 16 }}>
+                  <Block section={section} />
+                </div>
+              ) : (
+                <div key={section.id} style={{ height: section.height * scale, marginTop: si === 0 ? 0 : 16 }}>
+                  <div
+                    style={{
+                      width: page.width,
+                      height: section.height,
+                      transform: `scale(${scale})`,
+                      transformOrigin: 'top left',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      ...bgStyle(section.background),
+                    }}
+                  >
+                    {section.elements.map((el) => (
+                      <CanvasElement key={el.id} el={el} />
+                    ))}
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         )
       })}
