@@ -146,7 +146,11 @@ const PageBuilder = () => {
   const addToSection = (el) => {
     const p = config.pages[current]
     const sec = p.sections.find((s) => s.id === activeSectionId) || p.sections[0]
-    if (!sec) return
+    if (!sec) {
+      setMsg({ type: 'error', text: 'Add a section first — use the Sections tab.' })
+      setTab('sections')
+      return
+    }
     snapshot()
     setConfig((c) => ({
       ...c,
