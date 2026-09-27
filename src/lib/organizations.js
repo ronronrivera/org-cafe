@@ -26,7 +26,7 @@ export async function listOrganizations() {
  * Upload an image into the org's folder (RLS storage convention is
  * "<org_id>/..."), returning its public URL.
  */
-async function uploadImage(orgId, file, prefix) {
+export async function uploadImage(orgId, file, prefix) {
   const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png'
   const path = `${orgId}/${prefix}-${Date.now()}.${ext}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })

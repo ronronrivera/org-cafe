@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Loader2, Save, ImagePlus, SquarePen, LayoutTemplate, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Loader2, Save, ImagePlus, SquarePen, LayoutTemplate, ExternalLink } from 'lucide-react'
 import OrganizationCard from '../components/OrganizationCard'
 import { getMyOrganization, updateOrganization } from '../lib/organizations'
+import { slugify } from '../lib/slug'
 
 const TABS = [
   { id: 'card', label: 'Organization Card', icon: SquarePen },
@@ -9,6 +11,7 @@ const TABS = [
 ]
 
 const OrgRepDashboard = () => {
+  const navigate = useNavigate()
   const [tab, setTab] = useState('card')
   const [org, setOrg] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -111,42 +114,60 @@ const OrgRepDashboard = () => {
         ))}
       </div>
 
-      {/* Page Builder — prototype placeholder (not implemented yet) */}
+      {/* Page Builder — live preview of the org's public page */}
       {tab === 'builder' && (
         <div key="builder" className="mt-8 animate-fade-in-up">
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white">
-              <LayoutTemplate className="h-7 w-7" />
-            </span>
-            <h2 className="mt-4 text-xl font-bold text-slate-800">Page Builder</h2>
-            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-              <Sparkles className="h-3.5 w-3.5" /> Coming soon
-            </span>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-500">
-              Design your own organization page — drag-and-drop sections, pick a theme, add posts,
-              events, media, and announcements. This is a planned feature; the interface below is a
-              placeholder while we design it.
-            </p>
-
-            {/* Wireframe mockup */}
-            <div className="mx-auto mt-8 max-w-lg space-y-3 text-left opacity-60">
-              <div className="h-24 rounded-lg bg-slate-100" />
-              <div className="grid grid-cols-3 gap-3">
-                <div className="h-16 rounded-lg bg-slate-100" />
-                <div className="h-16 rounded-lg bg-slate-100" />
-                <div className="h-16 rounded-lg bg-slate-100" />
-              </div>
-              <div className="h-4 w-2/3 rounded bg-slate-100" />
-              <div className="h-4 w-1/2 rounded bg-slate-100" />
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-20 text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" /> Loading…
             </div>
+          ) : loadError || !org ? (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+              {loadError || 'No organization found.'}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                    <LayoutTemplate className="h-5 w-5 text-emerald-700" /> Your Page
+                  </h2>
+                  <p className="text-sm text-slate-500">A live preview of your public organization page.</p>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href={`/org/${slugify(org.org_name || '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <ExternalLink className="h-4 w-4" /> View as
+                  </a>
+                  <button
+                    onClick={() => navigate('/dashboard/builder')}
+                    className="flex items-center gap-2 rounded-lg bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900"
+                  >
+                    <SquarePen className="h-4 w-4" /> Edit Page
+                  </button>
+                </div>
+              </div>
 
-            <button
-              disabled
-              className="mt-8 cursor-not-allowed rounded-lg bg-slate-200 px-6 py-2.5 text-sm font-semibold text-slate-400"
-            >
-              Start Building
-            </button>
-          </div>
+              {/* Live preview — scroll inside to see the whole page */}
+              <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 shadow-inner">
+                <iframe
+                  title="Page preview"
+                  src={`/org/${slugify(org.org_name || '')}`}
+                  className="w-full"
+                  style={{ height: 560, border: 0, display: 'block' }}
+                />
+              </div>
+              <p className="mt-1 text-center text-xs text-slate-400">Scroll inside the preview to see the whole page.</p>
+
+              <p className="mt-4 text-center text-xs text-slate-400">
+                Click <span className="font-medium text-slate-500">Edit Page</span> to customize your theme, sections, and content.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

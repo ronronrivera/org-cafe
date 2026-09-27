@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Directory from './pages/Directory'
+import OrgPage from './pages/OrgPage'
 import Login from './pages/Login'
 import Admin from './pages/Admin'
 import OrgRepDashboard from './pages/OrgRepDashboard'
+import PageBuilder from './pages/PageBuilder'
 import Profile from './pages/Profile'
 import { supabase } from './lib/supabaseClient'
 import { getCurrentRole, signOut } from './lib/auth'
@@ -41,6 +43,7 @@ const DashboardRedirect = ({ authReady, session, roleResolved, role }) => {
 
 const App = () => {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [session, setSession] = useState(null)
   const [authReady, setAuthReady] = useState(false)
   const [role, setRole] = useState(null)
@@ -87,13 +90,18 @@ const App = () => {
   // Shared guard props so the module-level <Guard> knows the current auth state.
   const guardProps = { authReady, session, roleResolved, role }
 
+  // Org public pages are standalone websites, and the builder is a focused
+  // full-screen editor — no global org-cafe header on either.
+  const hideChrome = pathname.startsWith('/org/') || pathname.startsWith('/dashboard/builder')
+
   return (
     <div className="min-h-screen bg-slate-100">
-      <Navbar isAuthenticated={!!session} onLogout={handleLogout} />
+      {!hideChrome && <Navbar isAuthenticated={!!session} onLogout={handleLogout} />}
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/organizations" element={<Directory />} />
+        <Route path="/org/:slug" element={<OrgPage />} />
         <Route path="/app" element={<DashboardRedirect {...guardProps} />} />
         <Route
           path="/login"
@@ -120,6 +128,14 @@ const App = () => {
           element={
             <Guard {...guardProps} allow="org_rep">
               <OrgRepDashboard />
+            </Guard>
+          }
+        />
+        <Route
+          path="/dashboard/builder"
+          element={
+            <Guard {...guardProps} allow="org_rep">
+              <PageBuilder />
             </Guard>
           }
         />

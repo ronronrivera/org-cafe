@@ -1,5 +1,6 @@
 import { Globe } from 'lucide-react'
 import { accentStyles, categoryBadge } from '../data/sampleOrganizations'
+import { slugify } from '../lib/slug'
 
 // lucide-react dropped brand icons, so the Facebook logo is inlined as SVG.
 const FacebookIcon = ({ className }) => (
@@ -65,7 +66,7 @@ const OrganizationCard = ({ org, index = 0 }) => {
             <FacebookIcon className="h-4 w-4 shrink-0 text-[#1877F2]" /> Facebook Page
           </a>
           <a
-            href={org.join_form_link}
+            href={`/org/${slugify(org.org_name || '')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-emerald-800 px-4 py-2 text-xs font-medium text-white transition hover:bg-emerald-900 sm:text-sm"
