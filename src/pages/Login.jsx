@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Landmark, User, Eye, EyeOff } from 'lucide-react'
 import { signInAsAdmin, signInAsOrgRep } from '../lib/auth'
+import HeroBackground from '../components/HeroBackground'
 
 // Both roles authenticate through Supabase Auth (SRS §3.3, §3.4). This is the
 // design shell; the submit handler is wired to real auth in a later step.
@@ -41,8 +42,10 @@ const Login = () => {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-white px-4 py-10">
-      <div className="w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-[0_0_60px_rgba(0,0,0,0.28)]">
+    // The global Navbar overlays this page (see Navbar), so pad past it.
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 pb-24 pt-24">
+      <HeroBackground />
+      <div className="relative w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl shadow-emerald-950/40">
         {/* Card header */}
         <div className="flex flex-col items-center text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">

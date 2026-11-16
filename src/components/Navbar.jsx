@@ -48,12 +48,20 @@ const Navbar = ({ isAuthenticated = false, onLogout = () => {} }) => {
   const dashActiveClass =
     'flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-emerald-900 transition'
   const onDashboard = pathname === '/admin' || pathname === '/dashboard'
+  // On pages with the hero backdrop the header floats over it instead of sitting above it.
+  const overlay = pathname === '/' || pathname === '/login'
 
   return (
-    <header className="bg-emerald-900 text-white shadow-md">
+    <header
+      className={
+        overlay
+          ? 'absolute inset-x-0 top-0 z-30 bg-emerald-950/25 text-white backdrop-blur-sm'
+          : 'bg-emerald-900 text-white shadow-md'
+      }
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-6">
         <button onClick={go('/')} className="flex min-w-0 items-center gap-2.5 md:justify-self-start">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
             <Landmark className="h-5 w-5" />
           </span>
           <span className="truncate text-base font-semibold sm:text-lg">
