@@ -31,3 +31,6 @@ supabase/.temp
 
 # Claude Code
 CLAUDE.md
+
+# Google service-account keys — never commit
+sheet_keys/

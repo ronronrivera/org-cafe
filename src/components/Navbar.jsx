@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Landmark, User, UserCog, LogOut, Settings, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react'
 
-// Payment Status has no page yet (path: null).
 const NAV_ITEMS = [
   { label: 'Home', path: '/' },
-  { label: 'Payment Status', path: null },
+  { label: 'Payment Status', path: '/payment' },
   { label: 'Organizations List', path: '/organizations' },
 ]
 

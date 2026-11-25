@@ -10,6 +10,7 @@ import Admin from './pages/Admin'
 import OrgRepDashboard from './pages/OrgRepDashboard'
 import PageBuilder from './pages/PageBuilder'
 import Profile from './pages/Profile'
+import FeeClearance from './pages/FeeClearance'
 import { supabase } from './lib/supabaseClient'
 import { getCurrentRole, signOut } from './lib/auth'
 
@@ -101,6 +102,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/organizations" element={<Directory />} />
+        <Route path="/payment" element={<FeeClearance />} />
         <Route path="/org/:slug" element={<OrgPage />} />
         <Route path="/app" element={<DashboardRedirect {...guardProps} />} />
         <Route

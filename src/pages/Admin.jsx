@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Building2, ReceiptText, Plus, Trash2, Loader2 } from 'lucide-react'
-import { students as seedStudents } from '../data/sampleStudents'
 import { listOrganizations, listCategories, deleteOrganization } from '../lib/organizations'
 import AddOrgModal from '../components/AddOrgModal'
 import ConfirmModal from '../components/ConfirmModal'
+import FeePaymentsPanel from '../components/FeePaymentsPanel'
 
 const TABS = [
   { id: 'orgs', label: 'Organizations', icon: Building2 },
@@ -58,19 +58,6 @@ const Admin = ({ email }) => {
     }
     setDeleteTarget(null)
   }
-
-  // Students / payments (still hardcoded)
-  const [students, setStudents] = useState(seedStudents)
-  const [filter, setFilter] = useState('all')
-  const toggleStatus = (id) =>
-    setStudents((prev) =>
-      prev.map((s) =>
-        s.student_id === id ? { ...s, status: s.status === 'Paid' ? 'Not Paid' : 'Paid' } : s,
-      ),
-    )
-  const visibleStudents = students.filter((s) => filter === 'all' || s.status === filter)
-  const paidCount = students.filter((s) => s.status === 'Paid').length
-  const notPaidCount = students.length - paidCount
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-10">
@@ -180,81 +167,10 @@ const Admin = ({ email }) => {
         </div>
       )}
 
-      {/* Payments tab (hardcoded for now) */}
+      {/* Payments tab — live LCO fee tracker sheet */}
       {tab === 'payments' && (
         <div key="payments" className="mt-6 animate-fade-in-up">
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-800">Student Fee Clearance</h2>
-              <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-                {[
-                  { id: 'all', label: `All (${students.length})` },
-                  { id: 'Paid', label: `Paid (${paidCount})` },
-                  { id: 'Not Paid', label: `Not Paid (${notPaidCount})` },
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFilter(f.id)}
-                    className={
-                      'rounded-md px-3 py-1.5 text-sm font-medium transition ' +
-                      (filter === f.id ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')
-                    }
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-6 py-3">Student ID</th>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Dept</th>
-                  <th className="px-6 py-3">Course</th>
-                  <th className="px-6 py-3">Year</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visibleStudents.map((s) => (
-                  <tr key={s.student_id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 font-medium text-slate-800">{s.student_id}</td>
-                    <td className="px-6 py-3 text-slate-600">{s.name}</td>
-                    <td className="px-6 py-3 text-slate-500">{s.department}</td>
-                    <td className="px-6 py-3 text-slate-500">{s.course}</td>
-                    <td className="px-6 py-3 text-slate-500">{s.year_level}</td>
-                    <td className="px-6 py-3">
-                      <span
-                        className={
-                          'rounded-full px-2.5 py-1 text-xs font-semibold ' +
-                          (s.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700')
-                        }
-                      >
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      <button
-                        onClick={() => toggleStatus(s.student_id)}
-                        className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                      >
-                        Mark {s.status === 'Paid' ? 'Not Paid' : 'Paid'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {visibleStudents.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
-                      No students match this filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </section>
+          <FeePaymentsPanel />
         </div>
       )}
 
