@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus, Pencil, RefreshCw, Search, Loader2, X } from 'lucide-react'
 import { listFeeRows, addFeeRow, updateFeeRow, sheetDateToIso } from '../lib/fees'
 
@@ -31,7 +32,10 @@ const FeeRowModal = ({ original, receivers, onClose, onSaved }) => {
     'w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
   const label = 'mb-1 block text-xs font-medium text-slate-500'
 
-  return (
+  // Portaled to <body>: the tab wrapper keeps a transform from its fade-in
+  // animation, which would otherwise make this fixed overlay position against
+  // the (long) table instead of the viewport.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={onClose}>
       <form
         onSubmit={submit}
@@ -99,7 +103,8 @@ const FeeRowModal = ({ original, receivers, onClose, onSaved }) => {
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
